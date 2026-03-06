@@ -17954,3 +17954,12 @@ Entries:
   id: 1978
   time: '2026-03-06T13:42:51.0000000+00:00'
   url: https://github.com/Monolith-Station/Monolith/pull/3377
+- author: NazrinNya
+  changes:
+    - type: Tweak
+      message: >-
+        VESPERA and VANYK damage have been severely lowered. (Almost divided by
+        3)
+  id: 1979
+  time: '2026-03-06T15:48:50.0000000+00:00'
+  url: https://github.com/Monolith-Station/Monolith/pull/3378
