@@ -18459,3 +18459,12 @@ Entries:
   id: 2036
   time: '2026-03-21T00:37:39.0000000+00:00'
   url: https://github.com/Monolith-Station/Monolith/pull/3497
+- author: Isratosh
+  changes:
+    - type: Add
+      message: >-
+        Vanyk and Vespera missile magazine recipes added to the military and
+        ammo techfabs
+  id: 2037
+  time: '2026-03-21T07:44:24.0000000+00:00'
+  url: https://github.com/Monolith-Station/Monolith/pull/3501
