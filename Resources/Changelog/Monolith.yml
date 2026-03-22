@@ -18643,3 +18643,12 @@ Entries:
   id: 2057
   time: '2026-03-22T14:53:08.0000000+00:00'
   url: https://github.com/Monolith-Station/Monolith/pull/3500
+- author: Kiithnaras
+  changes:
+    - type: Tweak
+      message: Expanded damage types healed by bed rest
+    - type: Tweak
+      message: Made Stasis beds damage-neutral to Alive patients.
+  id: 2058
+  time: '2026-03-22T16:01:07.0000000+00:00'
+  url: https://github.com/Monolith-Station/Monolith/pull/3519
