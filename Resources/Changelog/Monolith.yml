@@ -19246,3 +19246,16 @@ Entries:
   id: 2116
   time: '2026-03-30T15:42:56.0000000+00:00'
   url: https://github.com/Monolith-Station/Monolith/pull/3611
+- author: mikusssssss
+  changes:
+    - type: Add
+      message: Added Caroline
+    - type: Add
+      message: Added new energy low sound effect
+    - type: Remove
+      message: Removed the round start IPC medium battery
+    - type: Tweak
+      message: Changed some values regarding unlocking and locking IPC's
+  id: 2117
+  time: '2026-03-30T15:45:19.0000000+00:00'
+  url: https://github.com/Monolith-Station/Monolith/pull/3640
