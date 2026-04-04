@@ -19289,3 +19289,10 @@ Entries:
   id: 2127
   time: '2026-04-03T18:29:10.0000000+00:00'
   url: https://github.com/Monolith-Station/Monolith/pull/3578
+- author: Redrover1760
+  changes:
+    - type: Tweak
+      message: Burn damage is now added to the red damage overlay
+  id: 2128
+  time: '2026-04-04T00:37:54.0000000+00:00'
+  url: https://github.com/Monolith-Station/Monolith/pull/3682
