@@ -106,9 +106,8 @@
             <controls:ConfirmButton Name="UnassignDeedButton"
                 Text="{Loc 'shipyard-console-unassign-deed'}"
                 ConfirmationText="{Loc 'shipyard-console-confirm-unassign'}"
-                StyleClasses="ButtonSquare"
-                Disabled="True"
-                StyleClasses="ButtonCaution" />
+                StyleClasses="ButtonSquare ButtonCaution"
+                Disabled="True" />
 
             <Button Name="SaveShipButton"
                 Text="Save Ship"

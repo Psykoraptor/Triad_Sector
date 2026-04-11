@@ -116,7 +116,6 @@ namespace Content.Server.Entry
                 IoCManager.Resolve<ServerInfoManager>().Initialize();
                 IoCManager.Resolve<ServerApi>().Initialize();
                 IoCManager.Resolve<MiniAuthManager>();
-                IoCManager.Resolve<DiscordAuthManager>().Initialize(); // Floofstation
                 IoCManager.Resolve<ServerIdentityService>().Initialize();
 
                 _voteManager.Initialize();

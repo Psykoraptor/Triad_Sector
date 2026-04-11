@@ -263,6 +263,9 @@ namespace Content.Server.Shuttles.Systems
             var gridA = dockAXform.GridUid!.Value;
             var gridB = dockBXform.GridUid!.Value;
 
+            var hasPhysA = HasComp<PhysicsComponent>(gridA);
+            var hasPhysB = HasComp<PhysicsComponent>(gridB);
+
             // May not be possible if map or the likes.
             if (TryComp<PhysicsComponent>(gridA, out var bodyA) &&
                 TryComp<PhysicsComponent>(gridB, out var bodyB))

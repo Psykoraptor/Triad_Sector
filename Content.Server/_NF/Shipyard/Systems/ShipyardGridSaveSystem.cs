@@ -113,17 +113,13 @@ public sealed class ShipyardGridSaveSystem : EntitySystem
             return;
         }
 
-        if (deed.ShuttleUid == null || !_entityManager.TryGetEntity(deed.ShuttleUid.Value, out var shuttleUid))
+        if (deed.ShuttleUid == null)
         {
             _sawmill.Warning("Shuttle deed does not reference a valid shuttle");
             return;
         }
 
-        if (!_gridQuery.TryComp(shuttleUid.Value, out var gridComponent))
-        {
-            _sawmill.Warning("Shuttle entity is not a valid grid");
-            return;
-        }
+        var shuttleUid = deed.ShuttleUid;
 
         // Get player session
         if (!_playerManager.TryGetSessionByEntity(player, out var playerSession))
@@ -166,7 +162,7 @@ public sealed class ShipyardGridSaveSystem : EntitySystem
 
         while (query.MoveNext(out var entityUid, out var deed))
         {
-            if (deed.ShuttleUid != null && _entityManager.TryGetEntity(deed.ShuttleUid.Value, out var deedShuttleEntity) && deedShuttleEntity == shuttleUid)
+            if (deed.ShuttleUid != null && _entityManager.EntityExists(deed.ShuttleUid.Value) && deed.ShuttleUid.Value == shuttleUid)
             {
                 deedsToRemove.Add(entityUid);
             }
@@ -174,7 +170,7 @@ public sealed class ShipyardGridSaveSystem : EntitySystem
 
         foreach (var deedEntity in deedsToRemove)
         {
-            _entityManager.RemoveComponent<ShuttleDeedComponent>(deedEntity);
+            RemComp<ShuttleDeedComponent>(deedEntity);
             _sawmill.Info($"Removed shuttle deed from entity {deedEntity}");
         }
     }
@@ -325,6 +321,49 @@ public sealed class ShipyardGridSaveSystem : EntitySystem
         catch (Exception e)
         {
             _sawmill.Warning($"TagStashContents: Exception while tagging stash contents on grid {gridUid}: {e.Message}");
+        }
+    }
+
+    private void CleanupBrokenDeviceLinks(EntityUid gridUid)
+    {
+        try
+        {
+            var linksRemoved = 0;
+            var sourcesProcessed = 0;
+
+            // Collect all entities on the grid with device link source components
+            var sourceQuery = _entityManager.EntityQueryEnumerator<DeviceLinkSourceComponent, TransformComponent>();
+            while (sourceQuery.MoveNext(out var sourceEnt, out var sourceComp, out var xform))
+            {
+                if (xform.GridUid != gridUid)
+                    continue;
+
+                sourcesProcessed++;
+
+                // Check LinkedPorts and remove links to entities that no longer exist
+                var brokenSinks = new List<EntityUid>();
+                foreach (var sinkEnt in sourceComp.LinkedPorts.Keys)
+                {
+                    if (!_entityManager.EntityExists(sinkEnt) || _entityManager.IsQueuedForDeletion(sinkEnt))
+                    {
+                        brokenSinks.Add(sinkEnt);
+                    }
+                }
+
+                // Use the DeviceLinkSystem to properly remove broken links
+                foreach (var brokenSink in brokenSinks)
+                {
+                    _deviceLink.RemoveSinkFromSource(sourceEnt, brokenSink, sourceComp);
+                    linksRemoved++;
+                }
+            }
+
+            /* if (linksRemoved > 0)
+                _sawmill.Info($"CleanupBrokenDeviceLinks: Removed {linksRemoved} broken device link(s) from {sourcesProcessed} source(s) on grid {gridUid}"); */
+        }
+        catch (Exception e)
+        {
+            _sawmill.Warning($"CleanupBrokenDeviceLinks: Exception while cleaning device links on grid {gridUid}: {e.Message}");
         }
     }
 
@@ -720,7 +759,7 @@ public sealed class ShipyardGridSaveSystem : EntitySystem
                 if (_entityManager.RemoveComponent<AtmosDeviceComponent>(entity))
                     componentsRemoved++;
 
-				// ChemMaster: Log buffer solution state for debugging
+                // ChemMaster: Log buffer solution state for debugging
                 if (_entityManager.TryGetComponent<ChemMasterComponent>(entity, out var chemMaster))
                 {
                     if (_entitySystemManager.TryGetEntitySystem<SharedSolutionContainerSystem>(out var solutionSystem))

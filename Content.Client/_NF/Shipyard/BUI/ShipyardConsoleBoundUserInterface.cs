@@ -37,27 +37,31 @@ public sealed class ShipyardConsoleBoundUserInterface : BoundUserInterface
     protected override void Open()
     {
         base.Open();
-        
-        _menu = new ShipyardConsoleMenu(this);
-        // Disable the NFSD popup for now.
-        // var rules = new FormattedMessage();
-        // _rulesWindow = new ShipyardRulesPopup(this);
-        _menu.OpenCentered();
-        // if (ShipyardConsoleUiKey.Security == (ShipyardConsoleUiKey) UiKey)
-        // {
-        //     rules.AddText(Loc.GetString($"shipyard-rules-default1"));
-        //     rules.PushNewline();
-        //     rules.AddText(Loc.GetString($"shipyard-rules-default2"));
-        //     _rulesWindow.ShipRules.SetMessage(rules);
-        //     _rulesWindow.OpenCentered();
-        // }
-        _menu.OnClose += Close;
-        _menu.OnOrderApproved += ApproveOrder;
-        _menu.OnSellShip += SellShip;
-        _menu.OnUnassignDeed += UnassignDeed;
-        _menu.OnRenameShip += RenameShip;
-        _menu.OnSaveShip += SaveShip;
-        _menu.TargetIdButton.OnPressed += _ => SendMessage(new ItemSlotButtonPressedEvent("ShipyardConsole-targetId"));
+        if (_menu == null)
+        {
+            _menu = this.CreateWindow<ShipyardConsoleMenu>();
+            // Disable the NFSD popup for now.
+            // var rules = new FormattedMessage();
+            // _rulesWindow = new ShipyardRulesPopup(this);
+            _menu.OpenCentered();
+            // if (ShipyardConsoleUiKey.Security == (ShipyardConsoleUiKey) UiKey)
+            // {
+            //     rules.AddText(Loc.GetString($"shipyard-rules-default1"));
+            //     rules.PushNewline();
+            //     rules.AddText(Loc.GetString($"shipyard-rules-default2"));
+            //     _rulesWindow.ShipRules.SetMessage(rules);
+            //     _rulesWindow.OpenCentered();
+            // }
+            _menu.OnClose += Close;
+            _menu.OnOrderApproved += ApproveOrder;
+            _menu.OnSellShip += SellShip;
+            _menu.OnUnassignDeed += UnassignDeed;
+            _menu.OnRenameShip += RenameShip;
+            _menu.OnSaveShip += SaveShip;
+            var targetIdButton = _menu.FindControl<Button>("TargetIdButton");
+            if (targetIdButton != null)
+                targetIdButton.OnPressed += _ => SendMessage(new ItemSlotButtonPressedEvent("ShipyardConsole-targetId"));
+        }
 
         InitializeSaveLoadControls();
     }
@@ -87,6 +91,7 @@ public sealed class ShipyardConsoleBoundUserInterface : BoundUserInterface
 
         // Subscribe to ship updates
         _shipFileManagementSystem.OnShipsUpdated += RefreshSavedShipList;
+        _shipFileManagementSystem.OnShipLoaded += OnShipLoaded;
         
         RefreshSavedShipList();
     }
@@ -132,6 +137,13 @@ public sealed class ShipyardConsoleBoundUserInterface : BoundUserInterface
         _selectedShipIndex = args.ItemIndex;
         if (_loadShipButton != null)
             _loadShipButton.Disabled = false;
+    }
+
+    private void OnShipLoaded(string shipName)
+    {
+        // Refresh the ship list when a ship is loaded
+        RefreshSavedShipList();
+        Logger.Debug($"Ship '{shipName}' was loaded - refreshed saved ship list");
     }
 
     private void RefreshSavedShipList()
@@ -205,24 +217,6 @@ public sealed class ShipyardConsoleBoundUserInterface : BoundUserInterface
         {
             RefreshSavedShipList();
         }
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-
-        if (!disposing) return;
-
-        _menu?.Dispose();
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-
-        if (!disposing) return;
-
-        _menu?.Dispose();
     }
 
     private void ApproveOrder(ButtonEventArgs args)

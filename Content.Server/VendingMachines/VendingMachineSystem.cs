@@ -52,8 +52,6 @@ namespace Content.Server.VendingMachines
         [Dependency] private readonly SpeakOnUIClosedSystem _speakOnUIClosed = default!;
         [Dependency] private readonly SharedPointLightSystem _light = default!;
         [Dependency] private readonly EmagSystem _emag = default!;
-        [Dependency] private readonly IConfigurationManager _cfg = default!; // HL: vending CVars
-
         [Dependency] private readonly IPrototypeManager _prototypeManager = default!; // Frontier
         [Dependency] private readonly SharedAudioSystem _audioSystem = default!; // Frontier
         [Dependency] private readonly BankSystem _bankSystem = default!; // Frontier
@@ -63,10 +61,6 @@ namespace Content.Server.VendingMachines
         [Dependency] private readonly VendingMachinePurchaseSystem _vendingPurchase = default!; // Mono
 
         private const float WallVendEjectDistanceFromWall = 1f;
-
-        // HL: Lazy restock queue to amortize vending initialization cost on heavy maps/anchors
-        private readonly Queue<(EntityUid Uid, VendingMachineComponent Comp, float Quality)> _pendingRestock = new();
-        private TimeSpan _nextRestockTick;
 
         public override void Initialize()
         {
@@ -98,37 +92,43 @@ namespace Content.Server.VendingMachines
         {
             base.Update(frameTime);
 
-            // HL: Drain lazy restock queue in small batches to amortize load spikes
-            if (_pendingRestock.Count > 0)
-            {
-                var now = _timing.CurTime;
-                var interval = TimeSpan.FromMilliseconds(_cfg.GetCVar(Content.Shared.HL.CCVar.HLCCVars.VendingRestockTickMs));
-                if (now >= _nextRestockTick)
-                {
-                    _nextRestockTick = now + interval;
-                    var batch = Math.Max(1, _cfg.GetCVar(Content.Shared.HL.CCVar.HLCCVars.VendingRestockBatch));
-
-                    for (var i = 0; i < batch && _pendingRestock.Count > 0; i++)
-                    {
-                        var (uid, comp, quality) = _pendingRestock.Dequeue();
-                        if (Deleted(uid) || TerminatingOrDeleted(uid))
-                            continue;
-                        try
-                        {
-                            RestockInventoryFromPrototype(uid, comp, quality);
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error($"Vending restock failed for {ToPrettyString(uid)}: {ex}");
-                        }
-                    }
-                }
-            }
-
-            // Frontier: finite random ejections
             var query = EntityQueryEnumerator<VendingMachineComponent>();
             while (query.MoveNext(out var uid, out var comp))
             {
+                if (comp.Ejecting)
+                {
+                    comp.EjectAccumulator += frameTime;
+                    if (comp.EjectAccumulator >= comp.EjectDelay)
+                    {
+                        comp.EjectAccumulator = 0f;
+                        comp.Ejecting = false;
+
+                        EjectItem(uid, comp);
+                    }
+                }
+
+                if (comp.Denying)
+                {
+                    comp.DenyAccumulator += frameTime;
+                    if (comp.DenyAccumulator >= comp.DenyDelay)
+                    {
+                        comp.DenyAccumulator = 0f;
+                        comp.Denying = false;
+
+                        TryUpdateVisualState(uid, comp);
+                    }
+                }
+
+                if (comp.DispenseOnHitCoolingDown)
+                {
+                    comp.DispenseOnHitAccumulator += frameTime;
+                    if (comp.DispenseOnHitAccumulator >= comp.DispenseOnHitCooldown)
+                    {
+                        comp.DispenseOnHitAccumulator = 0f;
+                        comp.DispenseOnHitCoolingDown = false;
+                    }
+                }
+
                 // Added block for charges
                 if (comp.EjectRandomCounter == comp.EjectRandomMax || _timing.CurTime < comp.EjectNextChargeTime)
                     continue;
@@ -137,19 +137,16 @@ namespace Content.Server.VendingMachines
                 comp.EjectNextChargeTime = _timing.CurTime + comp.EjectRechargeDuration;
                 // Added block for charges
             }
-            // End Frontier: finite random ejections
-
             var disabled = EntityQueryEnumerator<EmpDisabledComponent, VendingMachineComponent>();
-            while (disabled.MoveNext(out var uid2, out _, out var comp2))
+            while (disabled.MoveNext(out var uid, out _, out var comp))
             {
-                if (comp2.NextEmpEject < _timing.CurTime)
+                if (comp.NextEmpEject < _timing.CurTime)
                 {
-                    EjectRandom(uid2, true, false, comp2);
-                    comp2.NextEmpEject += (5 * comp2.EjectDelay);
+                    EjectRandom(uid, true, false, comp);
+                    comp.NextEmpEject += TimeSpan.FromSeconds(5 * comp.EjectDelay);
                 }
             }
         }
-
         private void OnVendingPrice(EntityUid uid, VendingMachineComponent component, ref PriceCalculationEvent args)
         {
             var price = 0.0;
@@ -170,21 +167,7 @@ namespace Content.Server.VendingMachines
 
         protected override void OnMapInit(EntityUid uid, VendingMachineComponent component, MapInitEvent args)
         {
-            // HL: Optionally defer restock to amortize cost across ticks
-            if (_cfg.GetCVar(Content.Shared.HL.CCVar.HLCCVars.VendingLazyRestock))
-            {
-                // Create cash slot immediately to keep behavior, defer inventory population
-                if (component.CashSlot != null && component.CashSlotName != null)
-                    ItemSlots.AddItemSlot(uid, component.CashSlotName, component.CashSlot);
-
-                // Enqueue for later restock using initial quality
-                _pendingRestock.Enqueue((uid, component, component.InitialStockQuality));
-            }
-            else
-            {
-                // Original behavior: restock immediately via shared logic
-                base.OnMapInit(uid, component, args);
-            }
+            base.OnMapInit(uid, component, args);
 
             if (HasComp<ApcPowerReceiverComponent>(uid))
             {

@@ -1,10 +1,11 @@
 using Content.Server.Shuttles.Systems;
 using Content.Server.Shuttles.Components;
-using Content.Shared.Station.Components;
+using Content.Server.Station.Components;
 using Content.Server.Cargo.Systems;
-using Content.Server.Shuttles.Save; // HardLight
-using Robust.Shared.Timing; // For IGameTiming
 using Content.Server.Station.Systems;
+using Content.Shared.Doors.Components;
+using Content.Shared.Station.Components;
+using Content.Shared.Shuttles.Save;
 using Content.Shared._NF.Shipyard.Components;
 using Content.Shared._NF.Shipyard;
 using Content.Shared.GameTicking;
@@ -28,10 +29,12 @@ using Content.Shared.Mobs.Components;
 using Robust.Shared.Containers;
 using Content.Server._NF.Station.Components;
 using Content.Server.Storage.Components;
+using Content.Server.Shuttles.Save;
 using Content.Shared._Mono.Shipyard;
 using Robust.Shared.EntitySerialization.Systems;
 using Robust.Shared.Utility;
 using Robust.Shared.ContentPack;
+using Content.Shared.Shuttles.Save;
 using Content.Shared.Shuttles.Components; // For IFFComponent
 using Content.Shared.Timing;
 using Content.Server.Gravity;
@@ -75,14 +78,11 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
     [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly ShipOwnershipSystem _shipOwnership = default!;
     [Dependency] private readonly EntityLookupSystem _lookup = default!;
-    [Dependency] private readonly IEntityManager _entityManager = default!;
     [Dependency] private readonly IEntitySystemManager _entitySystemManager = default!;
     [Dependency] private readonly IResourceManager _resources = default!;
     [Dependency] private readonly SharedContainerSystem _container = default!; // For safe container removal before deletion
     [Dependency] private readonly UseDelaySystem _useDelay = default!;
     [Dependency] private readonly GravitySystem _gravitySystem = default!; // For post-load gravity refresh
-    [Dependency] private readonly EntityLookupSystem _lookup = default!;
-    [Dependency] private readonly IGameTiming _timing = default!; // For cooldown timing
     [Dependency] private readonly ShipSerializationSystem _shipSerialization = default!; // HardLight
 
     private EntityQuery<TransformComponent> _transformQuery;
@@ -127,8 +127,7 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
         _configManager.OnValueChanged(NFCCVars.Shipyard, SetShipyardEnabled); // NOTE: run immediately set to false, see comment above
 
         _configManager.OnValueChanged(NFCCVars.ShipyardSellRate, SetShipyardSellRate, true);
-    _sawmill = Logger.GetSawmill("shipyard");
-    SubscribeNetworkEvent<RequestLoadShipMessage>(HandleLoadShipRequest);
+        _sawmill = Logger.GetSawmill("shipyard");
 
         SubscribeLocalEvent<ShipyardConsoleComponent, ComponentStartup>(OnShipyardStartup);
         SubscribeLocalEvent<ShipyardConsoleComponent, BoundUIOpenedEvent>(OnConsoleUIOpened);
@@ -207,37 +206,22 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
             return false;
         }
 
-        if (!TryAddShuttle(shuttlePath, out var shuttleGrid))
+        var price = _pricing.AppraiseGrid(shuttleGrid.Value, null);
+        var targetGrid = _station.GetLargestGrid(stationData);
+
+        if (targetGrid == null) //how are we even here with no station grid
         {
+            QueueDel(shuttleGrid);
             shuttleEntityUid = null;
             return false;
         }
 
-        var grid = shuttleGrid.Value;
-
-        if (!TryComp<ShuttleComponent>(grid, out var shuttleComponent))
-        {
-            shuttleEntityUid = null;
-            return false;
-        }
-
-        var price = _pricing.AppraiseGrid(grid, null);
-        var targetGrid = consoleXform.GridUid.Value;
-
-        _sawmill.Info($"Shuttle {shuttlePath} was purchased at {ToPrettyString(consoleUid)} for {price:f2}");
-
-        // Ensure required components for docking and identification
-        EntityManager.EnsureComponent<Robust.Shared.Physics.Components.PhysicsComponent>(grid);
-        EntityManager.EnsureComponent<ShuttleComponent>(grid);
-        var iff = EntityManager.EnsureComponent<IFFComponent>(grid);
-        // Add new grid to the same station as the console's grid (for IFF / ownership), if any
-        if (TryComp<StationMemberComponent>(consoleXform.GridUid, out var stationMember))
-        {
-            _station.AddGridToStation(stationMember.Station, grid);
-        }
-
-        _shuttle.TryFTLDock(grid, shuttleComponent, targetGrid);
-        shuttleEntityUid = grid;
+        _sawmill.Info($"Shuttle {shuttlePath} was purchased at {ToPrettyString(stationUid)} for {price:f2}");
+        var ev = new ShipBoughtEvent();
+        RaiseLocalEvent(shuttleGrid.Value, ev);
+        //can do TryFTLDock later instead if we need to keep the shipyard map paused
+        _shuttle.TryFTLDock(shuttleGrid.Value, shuttleComponent, targetGrid.Value);
+        shuttleEntityUid = shuttleGrid;
         return true;
     }
 
@@ -406,11 +390,6 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
             _sawmill.Debug($"[ShipLoad] Strict load stage threw exception: {ex.Message}");
             return false;
         }
-
-        _sawmill.Info($"Shuttle {shuttlePath} was purchased at {ToPrettyString(stationUid)} for {price:f2}");
-        var ev = new ShipBoughtEvent();
-        RaiseLocalEvent(shuttleGrid.Value, ev);
-        //can do TryFTLDock later instead if we need to keep the shipyard map paused
     }
 
     // HardLight: Loads a shuttle from YAML data using a tolerant fallback path that skips over entities with missing prototypes.
@@ -451,6 +430,34 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
         }
     }
 
+    /// <summary>
+    /// Mono: Adds ShipAccessReaderComponent to all doors and lockers on a ship grid.
+    /// </summary>
+    private void AddShipAccessToEntities(EntityUid gridUid)
+    {
+        // Get the grid bounds to find all entities on the grid
+        if (!TryComp<MapGridComponent>(gridUid, out var grid))
+            return;
+
+        var gridBounds = grid.LocalAABB;
+        var gridEntities = new HashSet<EntityUid>();
+        _lookup.GetLocalEntitiesIntersecting(gridUid, gridBounds, gridEntities);
+
+        foreach (var entity in gridEntities)
+        {
+            // Add ship access to doors
+            if (EntityManager.HasComponent<DoorComponent>(entity))
+            {
+                EntityManager.EnsureComponent<ShipAccessReaderComponent>(entity);
+            }
+            // Add ship access to entity storage (lockers, crates, etc.)
+            else if (EntityManager.HasComponent<EntityStorageComponent>(entity))
+            {
+                EntityManager.EnsureComponent<ShipAccessReaderComponent>(entity);
+            }
+        }
+    }
+
     // HardLight: Performs final setup and docking for a loaded shuttle, with error handling to prevent load crashes.
     private bool TryFinalizeLoadedShuttle(EntityUid consoleUid, EntityUid grid, [NotNullWhen(true)] out EntityUid? shuttleEntityUid)
     {
@@ -481,12 +488,13 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
             _sawmill.Warning($"[ShipLoad] PurgeJointsAndResetDocks failed on {grid}: {ex.Message}");
         }
         // Add new grid to the same station as the console's grid (for IFF / ownership), if any
-        if (TryComp<StationMemberComponent>(consoleXform.GridUid, out var stationMember))
+        var consoleGridUid = consoleXform.GridUid.Value;
+        if (TryComp<StationMemberComponent>(consoleGridUid, out var stationMember))
         {
             _station.AddGridToStation(stationMember.Station, grid);
         }
 
-        _shuttle.TryFTLDock(grid, shuttleComponent, targetGrid.Value);
+        _shuttle.TryFTLDock(grid, shuttleComponent, consoleGridUid);
         shuttleEntityUid = grid;
         return true;
     }
@@ -807,22 +815,6 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
 
         if (removedEntityUids.Contains(normalized))
             return true;
-        }
-        catch (Exception ex)
-        {
-            _sawmill.Error($"Failed to purchase shuttle from YAML data: {ex.Message}");
-            return false;
-        }
-        finally
-        {
-            try
-            {
-                if (tempPath != default && _resources.UserData.Exists(tempPath))
-                    _resources.UserData.Delete(tempPath);
-            }
-            catch
-            {
-                // Best-effort cleanup
 
         return StaleSerializedUidTokens.Contains(normalized);
     }
@@ -994,7 +986,7 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
     /// </summary>
     private void TryResetUseDelays(EntityUid shuttleGrid)
     {
-        var useDelayQuery = _entityManager.EntityQueryEnumerator<UseDelayComponent, TransformComponent>();
+        var useDelayQuery = EntityManager.EntityQueryEnumerator<UseDelayComponent, TransformComponent>();
 
         while (useDelayQuery.MoveNext(out var uid, out var comp, out var xform))
         {
@@ -1093,7 +1085,7 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
         ShipyardSaleResult result = new ShipyardSaleResult();
         bill = 0;
 
-        if (!HasComp<ShuttleComponent>(shuttleUid)
+        if (!TryComp<StationDataComponent>(stationUid, out var stationGrid)
             || !_transformQuery.TryComp(shuttleUid, out var xform)
             || !_transformQuery.TryComp(consoleUid, out var consoleXform)
             || consoleXform.GridUid == null) // HardLight
@@ -1110,8 +1102,7 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
             return result;
         }
 
-        var targetGrid = consoleXform.GridUid.Value;
-        var gridDocks = _docking.GetDocks(targetGrid);
+        var gridDocks = _docking.GetDocks(targetGrid.Value);
         var shuttleDocks = _docking.GetDocks(shuttleUid);
         var isDocked = false;
 
@@ -1256,8 +1247,8 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
 
         var shuttle = shuttleDeed.ShuttleUid;
         if (shuttle != null
-             && TryGetEntity(shuttle.Value, out var shuttleEntity)
-             && _station.GetOwningStation(shuttleEntity.Value) is { Valid: true } shuttleStation)
+             && Exists(shuttle.Value)
+             && _station.GetOwningStation(shuttle.Value) is EntityUid shuttleStation && shuttleStation.Valid)
         {
             // Update the primary deed
             shuttleDeed.ShuttleName = newName;
@@ -1283,7 +1274,7 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
 
             var fullName = GetFullName(shuttleDeed);
             _station.RenameStation(shuttleStation, fullName, loud: false);
-            _metaData.SetEntityName(shuttleEntity.Value, fullName);
+            _metaData.SetEntityName(shuttle.Value, fullName);
             _metaData.SetEntityName(shuttleStation, fullName);
         }
         else
@@ -1294,7 +1285,7 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
 
         //TODO: move this to an event that others hook into.
         if (shuttleDeed.ShuttleUid != null &&
-            _shuttleRecordsSystem.TryGetRecord(shuttleDeed.ShuttleUid.Value, out var record))
+            _shuttleRecordsSystem.TryGetRecord(GetNetEntity(shuttleDeed.ShuttleUid.Value), out var record))
         {
             record.Name = newName ?? "";
             record.Suffix = newSuffix ?? "";
@@ -1348,10 +1339,13 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
                     }
                 }
             }
+
+            return null;
         }
         catch (Exception ex)
         {
             _sawmill.Warning($"Failed to extract ship name from YAML: {ex}");
+            return null;
         }
     }
 }
