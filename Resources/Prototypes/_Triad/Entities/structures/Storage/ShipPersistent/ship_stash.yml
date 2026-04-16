@@ -9,8 +9,8 @@
     state: military_storage_rsi
     noRot: true
   - type: Transform
-    noRot: true
-    anchored: true
+    anchored: false
+  - type: Anchorable
   - type: Fixtures
     fixtures:
       fix1:
@@ -50,8 +50,8 @@
     state: medical_bluespace_desk
     noRot: true
   - type: Transform
-    noRot: true
-    anchored: true
+    anchored: false
+  - type: Anchorable
   - type: Fixtures
     fixtures:
       fix1:
@@ -100,8 +100,8 @@
     state: botany_table
     noRot: true
   - type: Transform
-    noRot: true
-    anchored: true
+    anchored: false
+  - type: Anchorable
   - type: Fixtures
     fixtures:
       fix1:
@@ -150,8 +150,8 @@
     state: civilian_storage_stash
     noRot: true
   - type: Transform
-    noRot: true
-    anchored: true
+    anchored: false
+  - type: Anchorable
   - type: Fixtures
     fixtures:
       fix1:
