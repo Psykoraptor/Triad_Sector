@@ -1,4 +1,4 @@
-<p align="center"> <img alt="Frontier Station 14" width="880" height="300" src="https://raw.githubusercontent.com/Triad-Sector/Triad-Sector/refs/heads/main/Resources/Textures/_Triad/Logo/logo.png" /></p>
+<p align="center"> <img alt="Frontier Station 14" width="880" height="400" src="https://raw.githubusercontent.com/Triad-Sector/Triad-Sector/refs/heads/main/Resources/Textures/_Triad/Logo/logo.png" /></p>
 
 
 Triad is a fork of [Monolith](https://github.com/Monolith-Station/Monolith) that runs on the [Robust Toolbox](https://github.com/space-wizards/RobustToolbox) engine written in C#.
