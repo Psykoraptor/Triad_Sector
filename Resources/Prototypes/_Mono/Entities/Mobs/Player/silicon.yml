@@ -316,27 +316,29 @@
 #       time: 180000 # 50 hrs
 #   - type: GhostTakeoverAvailable
 
-# Remnant AI core #Triad - Disabled
+# Remnant AI core
 
-# - type: entity
-#   id: PlayerStationAiRedacted
-#   parent: PlayerStationAiEmpty
-#   suffix: Ghost Role, Remnant
-#   components:
-#   - type: ContainerComp
-#     proto: AiHeldRedacted
-#     container: station_ai_mind_slot
-#   - type: ContainerFill
-#     containers:
-#       station_ai_mind_slot:
-#       - StationAiBrainRedacted
-#   - type: Sprite
-#     sprite: Mobs/Silicon/station_ai.rsi
-#     layers:
-#     - state: base
-#     - state: ai
-#       shader: unshaded
-#   - type: Anchorable
+- type: entity
+  id: PlayerStationAiRedacted
+  parent: PlayerStationAiEmpty
+  suffix: Ghost Role, Remnant
+  components:
+  - type: ContainerComp
+    proto: AiHeldRedacted
+    container: station_ai_mind_slot
+  - type: ContainerFill
+    containers:
+      station_ai_mind_slot:
+      - StationAiBrainRedacted
+  - type: Sprite
+    sprite: Mobs/Silicon/station_ai.rsi
+    layers:
+    - state: base
+    - state: ai
+      shader: unshaded
+  - type: Anchorable
+
+#Triad - Disabled
 
 # - type: entity
 #   id: StationAiBrainRedacted
@@ -484,27 +486,29 @@
     - Binary
     defaultChannel: Binary
 
-# TSFMC AI core #Triad - Disabled
+# TSFMC AI core
 
-# - type: entity
-#   id: PlayerStationAiTSFMC
-#   parent: PlayerStationAiEmpty
-#   suffix: Ghost Role, TSFMC
-#   components:
-#   - type: ContainerComp
-#     proto: AiHeldTSFMC
-#     container: station_ai_mind_slot
-#   - type: ContainerFill
-#     containers:
-#       station_ai_mind_slot:
-#       - StationAiBrainTSFMC
-#   - type: Sprite
-#     sprite: Mobs/Silicon/station_ai.rsi
-#     layers:
-#     - state: base
-#     - state: ai
-#       shader: unshaded
-#   - type: Anchorable
+- type: entity
+  id: PlayerStationAiTSFMC
+  parent: PlayerStationAiEmpty
+  suffix: Ghost Role, TSFMC
+  components:
+  - type: ContainerComp
+    proto: AiHeldTSFMC
+    container: station_ai_mind_slot
+  - type: ContainerFill
+    containers:
+      station_ai_mind_slot:
+      - StationAiBrainTSFMC
+  - type: Sprite
+    sprite: Mobs/Silicon/station_ai.rsi
+    layers:
+    - state: base
+    - state: ai
+      shader: unshaded
+  - type: Anchorable
+ 
+# Triad - Disabled
 
 # - type: entity
 #   id: StationAiBrainTSFMC
@@ -564,28 +568,30 @@
 #     - Binary
 #     defaultChannel: Binary
 
-# PDV AI Core #Triad - Disabled
+# PDV AI Core
 
-# - type: entity
-#   id: PlayerStationAiPDV
-#   parent: PlayerStationAiEmpty
-#   suffix: Ghost Role, PDV
-#   components:
-#   - type: ContainerComp
-#     proto: AiHeldPDV
-#     container: station_ai_mind_slot
-#   - type: ContainerFill
-#     containers:
-#       station_ai_mind_slot:
-#       - StationAiBrainPDV
-#   - type: Sprite
-#     sprite: Mobs/Silicon/station_ai.rsi
-#     layers:
-#     - state: base
-#     - state: ai
-#       shader: unshaded
-#   - type: Anchorable
+- type: entity
+  id: PlayerStationAiPDV
+  parent: PlayerStationAiEmpty
+  suffix: Ghost Role, PDV
+  components:
+  - type: ContainerComp
+    proto: AiHeldPDV
+    container: station_ai_mind_slot
+  - type: ContainerFill
+    containers:
+      station_ai_mind_slot:
+      - StationAiBrainPDV
+  - type: Sprite
+    sprite: Mobs/Silicon/station_ai.rsi
+    layers:
+    - state: base
+    - state: ai
+      shader: unshaded
+  - type: Anchorable
 
+ #Triad - Disabled
+ 
 # - type: entity
 #   id: StationAiBrainPDV
 #   parent: StationAiBrain
