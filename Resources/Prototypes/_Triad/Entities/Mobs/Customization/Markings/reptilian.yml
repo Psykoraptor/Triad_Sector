@@ -11,9 +11,9 @@
   bodyPart: Chest
   markingCategory: Chest
   sprites:
-  - sprite: _Triad/Mobs/Customization/Reptilian/chest_female_alternate.rsi
+  - sprite: _Triad/Mobs/Customization/Reptilian/reptilian_female_alternate_chest.rsi
     state: chest
-  - sprite: _Triad/Mobs/Customization/Reptilian/chest_female_alternate.rsi
+  - sprite: _Triad/Mobs/Customization/Reptilian/reptilian_female_alternate_chest.rsi
     state: chest_secondary
-  - sprite: _Triad/Mobs/Customization/Reptilian/chest_female_alternate.rsi
+  - sprite: _Triad/Mobs/Customization/Reptilian/reptilian_female_alternate_chest.rsi
     state: nipples
