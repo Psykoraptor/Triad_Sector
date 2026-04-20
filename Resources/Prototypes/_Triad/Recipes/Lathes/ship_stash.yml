@@ -1,34 +1,19 @@
 - type: latheRecipe
-  id: MilitaryStorageStashFlatpack
-  result: MilitaryStorageStashFlatpack
-  completetime: 60
-  materials:
-    Steel: 1200
-    Plastitanium: 600
-    Plasteel: 800
+  parent: BaseGoldCircuitboardRecipe
+  id: MilitaryStorageStashCircuitboard
+  result: MilitaryStorageStashCircuitboard
 
 - type: latheRecipe
-  id: MedicalBluespaceDeskFlatpack
-  result: MedicalBluespaceDeskFlatpack
-  completetime: 30
-  materials:
-    Glass: 2000
-    Steel: 2000
-    Plasteel: 1000
+  parent: BaseGoldCircuitboardRecipe
+  id: MedicalBluespaceDeskCircuitboard
+  result: MedicalBluespaceDeskCircuitboard
 
 - type: latheRecipe
-  id: BotanyTableFlatpack
-  result: BotanyTableFlatpack
-  completetime: 30
-  materials:
-    Glass: 2000
-    Steel: 1000
-    Wood: 1000
+  parent: BaseGoldCircuitboardRecipe
+  id: BotanyTableCircuitboard
+  result: BotanyTableCircuitboard
 
 - type: latheRecipe
-  id: CivilianStorageStashFlatpack
-  result: CivilianStorageStashFlatpack
-  completetime: 30
-  materials:
-    Steel: 800
-    Plastic: 300
+  parent: BaseGoldCircuitboardRecipe
+  id: CivilianStorageStashCircuitboard
+  result: CivilianStorageStashCircuitboard

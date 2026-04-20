@@ -7,9 +7,9 @@
   tier: 3
   cost: 50000
   recipeUnlocks:
-  - CivilianStorageStashFlatpack
-  - BotanyTableFlatpack
-  - MedicalBluespaceDeskFlatpack
+  - CivilianStorageStashCircuitboard
+  - BotanyTableCircuitboard
+  - MedicalBluespaceDeskCircuitboard
   technologyPrerequisites:
   - SuperParts
   position: 1, 19
@@ -22,7 +22,7 @@
   tier: 3
   cost: 45000
   recipeUnlocks:
-  - MilitaryStorageStashFlatpack
+  - MilitaryStorageStashCircuitboard
   technologyPrerequisites:
   - CivilianStashTechnology
   position: 2, 19
