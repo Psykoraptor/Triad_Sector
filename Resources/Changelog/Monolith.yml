@@ -19405,3 +19405,17 @@ Entries:
   id: 2141
   time: '2026-04-20T21:54:16.0000000+00:00'
   url: https://github.com/Triad-Sector/Triad-Sector/pull/34
+- author: TheRealMasterChief117
+  changes:
+    - type: Add
+      message: >-
+        Added mechanical limits for the persistent ship stashes. The limits are
+        2 civilian stashes, 2 medical stashes, 1 botany stash, and 1 military
+        stash.
+    - type: Tweak
+      message: >-
+        Shipyard console now has popups for saving your ship, whether it
+        succeeded or failed
+  id: 2142
+  time: '2026-04-21T03:58:37.0000000+00:00'
+  url: https://github.com/Triad-Sector/Triad-Sector/pull/35
