@@ -3,6 +3,8 @@
   id: BasePersistentShipStorageStash
   abstract: true
   components:
+  - type: Sprite
+    noRot: true
   - type: HLPersistOnShipSave
   - type: Storage
     maxItemSize: Large
